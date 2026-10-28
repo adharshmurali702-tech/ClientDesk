@@ -1,0 +1,13 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const elements={}; const element=()=>({innerHTML:'',textContent:'',style:{},classList:{toggle(){},contains(){return false},add(){}},showModal(){},close(){}});
+const context={console,Intl,Date,URL,Blob,setTimeout,clearTimeout,crypto:require('crypto').webcrypto,location:{hash:''},localStorage:{getItem(){return null},setItem(){}},document:{getElementById(id){return elements[id]??=element()},querySelectorAll(){return []},body:element()},window:{},confirm(){return true}};
+vm.createContext(context);vm.runInContext(fs.readFileSync('dist/app.js','utf8'),context);
+for(const name of ['dashboard','clients','projects','invoices','reports','settings'])assert(vm.runInContext(name+'()',context).length>100);
+assert(vm.runInContext('validBackup(initial())',context));
+assert(!vm.runInContext('validBackup({clients:[],projects:[{}],invoices:[]})',context));
+assert.equal(vm.runInContext("esc('<script>')",context),'&lt;script&gt;');
+assert.equal(vm.runInContext("invoiceStatus({status:'sent',due:'2000-01-01'})",context),'overdue');
+assert.equal(vm.runInContext("invoiceStatus({status:'paid',due:'2000-01-01'})",context),'paid');
+vm.runInContext('state={demo:false,clients:[],projects:[],invoices:[]}',context);
+for(const name of ['dashboard','clients','projects','invoices','reports','settings'])assert(vm.runInContext(name+'()',context).length>100);
+console.log('PASS: six views, empty states, backup validation, escaping and overdue logic.');
